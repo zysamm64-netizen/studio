@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContentFlow Pro - 全能创作工作室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #05070a; }
+        .glass-card { background: rgba(17, 25, 40, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-btn { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); transition: all 0.3s ease; }
+        .gradient-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .ai-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen">
+
+    <!-- 侧边栏 -->
+    <aside class="w-72 fixed h-full bg-[#0d1117] border-r border-white/5 flex flex-col z-30">
+        <div class="p-8">
+            <h1 class="text-white text-2xl font-black tracking-tighter flex items-center gap-2">
+                <i class="fas fa-brain text-indigo-500"></i> ContentFlow <span class="text-indigo-500 text-xs italic bg-indigo-500/10 px-2 py-0.5 rounded">ULTIMATE</span>
+            </h1>
+        </div>
+
+        <nav class="flex-grow px-4 space-y-2">
+            <button onclick="switchTab('ideas')" class="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 rounded-xl border border-indigo-500/20">
+                <i class="fas fa-lightbulb"></i> <span class="text-sm font-bold">灵感与选题</span>
+            </button>
+            <button onclick="switchTab('ai-studio')" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl transition-all">
+                <i class="fas fa-wand-magic-sparkles"></i> <span class="text-sm">AI 创作实验室</span>
+            </button>
+            <button onclick="switchTab('finance')" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl transition-all">
+                <i class="fas fa-chart-pie"></i> <span class="text-sm">收益与投放统计</span>
+            </button>
+        </nav>
+
+        <div class="p-6 space-y-4">
+            <div class="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-2xl">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2">API 引擎状态</p>
+                <input type="password" id="api-key" placeholder="Gemini API Key..." class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] outline-none focus:border-indigo-500">
+                <p class="text-[8px] text-slate-500 mt-2 italic">注：本地加密存储，仅用于调用 AI</p>
+            </div>
+            <button onclick="showActivationModal()" id="activation-btn" class="w-full py-3 bg-white text-black text-xs font-black rounded-xl hover:bg-slate-200 transition-all uppercase tracking-tighter">解锁商业全能版</button>
+        </div>
+    </aside>
+
+    <!-- 主界面 -->
+    <main class="ml-72 p-10">
+        
+        <!-- Tab: 灵感与选题 -->
+        <section id="tab-ideas" class="tab-content active">
+            <header class="flex justify-between items-end mb-10">
+                <div>
+                    <h2 class="text-4xl font-black text-white tracking-tight mb-2 italic">选题看板</h2>
+                    <p class="text-slate-500 text-sm">今日已成功捕捉 <span id="idea-count" class="text-indigo-500 font-bold">0</span> 个爆款潜质选题</p>
+                </div>
+                <button onclick="openIdeaModal()" class="gradient-btn px-8 py-3 rounded-2xl font-bold text-white shadow-lg shadow-indigo-500/20">
+                    <i class="fas fa-plus"></i> 新增选题
+                </button>
+            </header>
+
+            <div class="bg-white/5 rounded-3xl border border-white/5 overflow-hidden glass-card">
+                <table class="w-full text-left">
+                    <thead class="bg-white/[0.02]">
+                        <tr>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">状态</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">标题内容</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">预定平台</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="idea-tbody" class="divide-y divide-white/5"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Tab: AI 创作实验室 -->
+        <section id="tab-ai-studio" class="tab-content">
+            <h2 class="text-4xl font-black text-white tracking-tight mb-8">AI 创作实验室</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- AI 视觉：图片生成 -->
+                <div class="glass-card p-8 rounded-3xl space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-xl flex items-center gap-2"><i class="fas fa-image text-purple-400"></i> AI 爆款封面生成</h3>
+                        <span class="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-1 rounded">Imagen 4.0</span>
+                    </div>
+                    <textarea id="img-prompt" placeholder="描述你想要的画面，例如：一个极简主义风格的自媒体博主工作台，赛博朋克霓虹灯光..." class="w-full h-32 bg-black/30 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-purple-500"></textarea>
+                    <button onclick="generateImage()" id="gen-img-btn" class="w-full py-4 gradient-btn rounded-2xl font-black">开始生成视觉素材</button>
+                    <div id="img-container" class="aspect-video bg-black/40 rounded-2xl flex items-center justify-center border border-dashed border-white/10 overflow-hidden">
+                        <p class="text-slate-600 text-xs italic">生成的图片将在此显示</p>
+                    </div>
+                </div>
+
+                <!-- AI 听觉：文字转语音 -->
+                <div class="glass-card p-8 rounded-3xl space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-xl flex items-center gap-2"><i class="fas fa-microphone text-blue-400"></i> 文字转语音 (TTS)</h3>
+                        <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded">原生引擎</span>
+                    </div>
+                    <textarea id="tts-text" placeholder="输入你想转成语音的文案内容..." class="w-full h-32 bg-black/30 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-blue-500"></textarea>
+                    <div class="grid grid-cols-2 gap-4">
+                        <select id="voice-select" class="bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-blue-500 text-white"></select>
+                        <button onclick="speakText()" class="py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-play"></i> 立即试听
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-500"><i class="fas fa-info-circle"></i> 提示：不同浏览器支持的语音包不同，推荐使用 Chrome 获取最佳效果。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: 收益与投放统计 -->
+        <section id="tab-finance" class="tab-content">
+            <h2 class="text-4xl font-black text-white tracking-tight mb-8">财务与投放看板</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="glass-card p-8 rounded-3xl">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">总预估收益</p>
+                    <p class="text-3xl font-black text-white italic">¥ 0.00</p>
+                </div>
+                <div class="glass-card p-8 rounded-3xl">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">投放 ROI</p>
+                    <p class="text-3xl font-black text-emerald-400 italic">0.0</p>
+                </div>
+                <div class="glass-card p-8 rounded-3xl">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">商单转化率</p>
+                    <p class="text-3xl font-black text-blue-400 italic">0%</p>
+                </div>
+            </div>
+            <div class="glass-card p-20 rounded-[3rem] text-center border-dashed border-2 border-white/5">
+                <i class="fas fa-lock text-slate-700 text-4xl mb-6"></i>
+                <h4 class="text-xl font-bold text-white mb-2">商业版统计模块已锁定</h4>
+                <p class="text-slate-500 text-sm mb-8">购买激活码以解锁深度数据分析、利润自动化计算等 Pro 功能</p>
+                <button onclick="showActivationModal()" class="px-10 py-4 bg-indigo-600 rounded-2xl font-black hover:bg-indigo-500 transition-all">立即联系客服激活</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 模态框：新增选题 -->
+    <div id="idea-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex items-center justify-center p-6">
+        <div class="bg-[#0d1117] w-full max-w-4xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row">
+            <div class="p-10 w-full md:w-1/2 border-r border-white/5">
+                <h3 class="text-2xl font-black mb-8 text-white">手动录入</h3>
+                <form id="idea-form" class="space-y-6">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">视频/图文标题</label>
+                        <input type="text" id="idea-title" required class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 mt-2 outline-none focus:border-indigo-500 text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <select id="idea-platform" class="bg-black/40 border border-white/10 rounded-2xl p-4 outline-none text-white text-sm">
+                            <option>小红书</option><option>抖音</option><option>Bilibili</option><option>视频号</option>
+                        </select>
+                        <select id="idea-priority" class="bg-black/40 border border-white/10 rounded-2xl p-4 outline-none text-white text-sm">
+                            <option>🔥 高爆款</option><option>⚡ 中规中矩</option><option>📝 备选库</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full py-4 gradient-btn rounded-2xl font-black text-white uppercase tracking-widest shadow-xl shadow-indigo-500/10">确认存入库</button>
+                </form>
+            </div>
+            <div class="p-10 w-full md:w-1/2 bg-indigo-900/10">
+                <h3 class="text-2xl font-black mb-8 text-indigo-400 flex items-center gap-2">
+                    <i class="fas fa-wand-magic-sparkles text-sm"></i> AI 爆款生成器
+                </h3>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" id="ai-keyword" placeholder="输入核心词 (如: 程序员副业)" class="w-full bg-black/60 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-indigo-500 pr-16 text-white">
+                        <button onclick="aiGenerateThemes()" id="ai-gen-btn" class="absolute right-3 top-3 px-3 py-1 bg-indigo-600 rounded-lg text-[10px] font-bold text-white">魔法</button>
+                    </div>
+                    <div id="ai-results" class="h-64 overflow-y-auto pr-2 no-scrollbar space-y-2">
+                        <div class="h-full flex flex-col items-center justify-center text-slate-600 text-[11px] italic">
+                            <i class="fas fa-sparkles mb-2"></i>
+                            等待施展魔法...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 激活模态框 -->
+    <div id="activation-modal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-[200] hidden flex items-center justify-center p-6 text-center">
+        <div class="max-w-sm w-full space-y-8">
+            <div class="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-500/40">
+                <i class="fas fa-shield-halved text-white text-4xl"></i>
+            </div>
+            <div>
+                <h3 class="text-3xl font-black text-white mb-2 tracking-tighter italic uppercase">解锁专业版功能</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">获得深度财务统计、多设备数据同步以及无限次 Imagen 4.0 高级生图能力。</p>
+            </div>
+            <input type="text" id="license-key" placeholder="输入授权序列号 (默认: PRO-2025-FLOW)" class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-white font-mono outline-none focus:border-indigo-500">
+            <div class="space-y-3">
+                <button onclick="verifyLicense()" class="w-full py-4 gradient-btn rounded-2xl font-black text-white">立即激活系统</button>
+                <button onclick="showActivationModal()" class="text-slate-600 text-xs hover:text-white transition-colors">暂时不，先看看基础版</button>
+            </div>
+            <p class="text-[10px] text-slate-700 uppercase font-black">Powered by ContentFlow.ai</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心逻辑 ---
+        let ideas = JSON.parse(localStorage.getItem('cf_pro_ideas') || '[]');
+        let isPro = localStorage.getItem('cf_pro_active') === 'true';
+        let voices = [];
+
+        function init() {
+            if(isPro) applyProStyles();
+            renderIdeas();
+            setupVoices();
+            // 加载 API Key
+            document.getElementById('api-key').value = localStorage.getItem('cf_pro_apikey') || '';
+        }
+
+        // Tab 切换
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            // UI 更新
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.className = "w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl transition-all";
+            });
+            event.currentTarget.className = "w-full flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 rounded-xl border border-indigo-500/20";
+        }
+
+        // --- 文字转语音 (TTS) ---
+        function setupVoices() {
+            const synth = window.speechSynthesis;
+            const select = document.getElementById('voice-select');
+            
+            const loadVoices = () => {
+                voices = synth.getVoices();
+                select.innerHTML = '';
+                voices.forEach((voice, i) => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    if(voice.lang.includes('zh')) option.selected = true;
+                    select.appendChild(option);
+                });
+            };
+            
+            if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        function speakText() {
+            const text = document.getElementById('tts-text').value;
+            if(!text) return alert('请输入文案');
+            const synth = window.speechSynthesis;
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.voice = voices[document.getElementById('voice-select').value];
+            synth.speak(utter);
+        }
+
+        // --- AI 图片生成 (Imagen 4.0 模式) ---
+        async function generateImage() {
+            const prompt = document.getElementById('img-prompt').value;
+            const key = document.getElementById('api-key').value;
+            const btn = document.getElementById('gen-img-btn');
+            const container = document.getElementById('img-container');
+
+            if(!prompt) return alert('请输入画面描述');
+            if(!key) return alert('请在侧边栏填入 API Key');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 正在构思画面...';
+            container.innerHTML = '<div class="ai-pulse text-indigo-400 text-xs italic">AI 正在根据描述绘制爆款封面...</div>';
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ instances: { prompt: prompt }, parameters: { sampleCount: 1 } })
+                });
+                const result = await response.json();
+                const base64 = result.predictions?.[0]?.bytesBase64Encoded;
+                if(!base64) throw new Error('生成失败');
+                
+                container.innerHTML = `<img src="data:image/png;base64,${base64}" class="w-full h-full object-cover rounded-2xl shadow-2xl">`;
+            } catch (err) {
+                container.innerHTML = `<p class="text-red-400 text-xs italic">生成失败。原因：API Key 无效或额度不足。</p>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '开始生成视觉素材';
+            }
+        }
+
+        // --- AI 选题生成 ---
+        async function aiGenerateThemes() {
+            const keyword = document.getElementById('ai-keyword').value;
+            const key = document.getElementById('api-key').value;
+            const resultsDiv = document.getElementById('ai-results');
+            const btn = document.getElementById('ai-gen-btn');
+
+            if(!keyword) return;
+            if(!key) return alert('请先输入侧边栏的 API Key');
+
+            btn.disabled = true;
+            resultsDiv.innerHTML = '<div class="h-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div>';
+
+            const userQuery = `作为一个爆款导师，请针对关键词“${keyword}”给5个极其吸引眼球、能在小红书和抖音获得高转化的标题。直接给标题列表，每行一个。`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ contents: [{ parts: [{ text: userQuery }] }] })
+                });
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if(!text) throw new Error();
+
+                const titles = text.split('\n').filter(t => t.trim());
+                resultsDiv.innerHTML = '';
+                titles.forEach(title => {
+                    const cleanTitle = title.replace(/^\d+\.\s*/, '');
+                    const div = document.createElement('div');
+                    div.className = "p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-indigo-500/40 cursor-pointer transition-all flex justify-between items-center group";
+                    div.innerHTML = `<span class="text-xs text-slate-300 font-bold">${cleanTitle}</span><i class="fas fa-arrow-left text-indigo-400 opacity-0 group-hover:opacity-100 transition-all"></i>`;
+                    div.onclick = () => document.getElementById('idea-title').value = cleanTitle;
+                    resultsDiv.appendChild(div);
+                });
+            } catch (err) {
+                resultsDiv.innerHTML = '<p class="text-[10px] text-red-500 text-center py-10">魔法失效。请检查 API Key。</p>';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- 激活与 Pro 逻辑 ---
+        function showActivationModal() { document.getElementById('activation-modal').classList.toggle('hidden'); }
+
+        function verifyLicense() {
+            const key = document.getElementById('license-key').value;
+            if(key === "PRO-2025-FLOW") {
+                localStorage.setItem('cf_pro_active', 'true');
+                isPro = true;
+                applyProStyles();
+                showActivationModal();
+                alert('激活成功！已解锁全部商业功能。');
+            } else { alert('授权码无效。'); }
+        }
+
+        function applyProStyles() {
+            document.getElementById('activation-btn').innerText = "商业专业版已激活";
+            document.getElementById('activation-btn').className = "w-full py-3 bg-indigo-600 text-white text-xs font-black rounded-xl cursor-default";
+            document.querySelectorAll('.locked-overlay').forEach(el => el.remove());
+        }
+
+        // --- 灵感库基础功能 ---
+        function openIdeaModal() { document.getElementById('idea-modal').classList.remove('hidden'); }
+        function closeIdeaModal() { document.getElementById('idea-modal').classList.add('hidden'); }
+
+        document.getElementById('idea-form').onsubmit = (e) => {
+            e.preventDefault();
+            const idea = {
+                id: Date.now(),
+                title: document.getElementById('idea-title').value,
+                platform: document.getElementById('idea-platform').value,
+                priority: document.getElementById('idea-priority').value,
+                status: '捕获中'
+            };
+            ideas.unshift(idea);
+            saveAndRender();
+            closeIdeaModal();
+            e.target.reset();
+        };
+
+        function updateStatus(id) {
+            const idea = ideas.find(i => i.id === id);
+            const statuses = ['捕获中', '脚本撰写', '拍摄拍摄', '后期剪辑', '已上线'];
+            idea.status = statuses[(statuses.indexOf(idea.status) + 1) % statuses.length];
+            saveAndRender();
+        }
+
+        function deleteIdea(id) {
+            if(confirm('确定抹除该选题？')) { ideas = ideas.filter(i => i.id !== id); saveAndRender(); }
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('cf_pro_ideas', JSON.stringify(ideas));
+            localStorage.setItem('cf_pro_apikey', document.getElementById('api-key').value);
+            renderIdeas();
+        }
+
+        function renderIdeas() {
+            const tbody = document.getElementById('idea-tbody');
+            tbody.innerHTML = '';
+            ideas.forEach(idea => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/[0.01] transition-all";
+                tr.innerHTML = `
+                    <td class="px-8 py-6"><button onclick="updateStatus(${idea.id})" class="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] text-indigo-400 font-bold uppercase">${idea.status}</button></td>
+                    <td class="px-8 py-6 font-bold text-white text-sm">${idea.title}</td>
+                    <td class="px-8 py-6 text-center"><span class="px-2 py-1 bg-slate-900 rounded text-[10px] text-slate-500 border border-white/5">${idea.platform}</span></td>
+                    <td class="px-8 py-6 text-right"><button onclick="deleteIdea(${idea.id})" class="text-slate-700 hover:text-red-500"><i class="fas fa-trash"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('idea-count').innerText = ideas.length;
+        }
+
+        // 监听 API Key 变化
+        document.getElementById('api-key').onchange = (e) => localStorage.setItem('cf_pro_apikey', e.target.value);
+
+        init();
+    </script>
+</body>
+</html>
